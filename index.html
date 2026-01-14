@@ -21,7 +21,7 @@
 <body>
 <div class="keypad-container">
     <div id="studentName" class="student-info">반갑습니다!</div>
-    <div class="display" id="display">----</div>
+    <div id="display" class="display">----</div>
     <div class="grid">
         <button onclick="addNum('1')">1</button><button onclick="addNum('2')">2</button><button onclick="addNum('3')">3</button>
         <button onclick="addNum('4')">4</button><button onclick="addNum('5')">5</button><button onclick="addNum('6')">6</button>
@@ -37,8 +37,8 @@
     let studentData = {};
     const API_TOKEN = "afca6237-6cf7-4792-96d6-25a240b66dc6";
     const DOC_ID = "Z9AYGZ6vXp";
-    const STUDENT_TABLE_ID = "grid-kCSxe8AMrr"; // DB 학생 테이블
-    const LOG_TABLE_ID = "grid-XCUBSLlTvd";     // DB 출결로그 테이블
+    const STUDENT_TABLE_ID = "grid-kCSxe8AMrr"; // DB 학생
+    const LOG_TABLE_ID = "grid-XCUBSLlTvd";     // DB 출결로그
 
     async function loadStudents() {
         try {
