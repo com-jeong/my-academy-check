@@ -6,19 +6,19 @@
     <title>학원 출결 시스템 - 최종연결</title>
     <style>
         :root { --primary-color: #4A90E2; --text-color: #2D3436; }
-        body { font-family: 'Pretendard', sans-serif; background: #f5f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        body { font-family: 'Pretendard', -apple-system, sans-serif; background: #f5f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .keypad-container { background: white; padding: 40px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); width: 400px; text-align: center; }
         .student-info { height: 40px; margin-bottom: 10px; font-size: 20px; font-weight: 700; color: var(--primary-color); }
         .display { background: #F1F3F5; height: 80px; border-radius: 20px; margin-bottom: 30px; display: flex; justify-content: center; align-items: center; font-size: 40px; font-weight: 800; letter-spacing: 15px; border: 2px solid #E9ECEF; }
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
         button { height: 80px; border: 1px solid #eee; border-radius: 20px; background: #fff; font-size: 28px; font-weight: 700; cursor: pointer; }
         .btn-ok { background: var(--primary-color); color: white; grid-column: span 2; }
-        #status { margin-top: 25px; font-size: 14px; color: #666; }
+        #status { margin-top: 25px; font-size: 14px; color: #666; font-weight: bold; }
     </style>
 </head>
 <body>
 <div class="keypad-container">
-    <div id="studentName" class="student-info">반갑습니다!</div>
+    <div id="studentName" class="student-info">데이터 로딩 중...</div>
     <div id="display" class="display">----</div>
     <div class="grid">
         <button onclick="addNum('1')">1</button><button onclick="addNum('2')">2</button><button onclick="addNum('3')">3</button>
@@ -27,21 +27,22 @@
         <button onclick="clearNum()" style="color:red">C</button><button onclick="addNum('0')">0</button>
         <button class="btn-ok" onclick="submitAttendance()">확인</button>
     </div>
-    <div id="status">데이터 연결 중...</div>
+    <div id="status">연결 시도 중...</div>
 </div>
 
 <script>
     let input = "";
     let studentData = {};
     
-    // 원장님 정보 반영
+    // 원장님 정보 (수정 완료)
     const API_TOKEN = "afca6237-6cf7-4792-96d6-25a240b66dc6";
     const DOC_ID = "Z9AYGZ6vXp";
-    const STUDENT_TABLE_ID = "grid-kCSxe8AMrr"; // DB 학생
-    const LOG_TABLE_ID = "grid-XCUBSLlTvd";     // DB 출결로그
+    const STUDENT_TABLE_ID = "grid-kCSxe8AMrr"; // DB 학생 테이블
+    const LOG_TABLE_ID = "grid-XCUBSLlTvd";     // DB 출결로그 테이블
 
     async function loadStudents() {
         const statusDiv = document.getElementById('status');
+        const nameDiv = document.getElementById('studentName');
         try {
             const url = `https://coda.io/api/v1/docs/${DOC_ID}/tables/${STUDENT_TABLE_ID}/rows`;
             const response = await fetch(url, {
@@ -50,20 +51,26 @@
             
             if (!response.ok) {
                 const errorData = await response.json();
-                statusDiv.innerText = "연결 실패: " + (errorData.message || "토큰 권한 확인 필요");
+                statusDiv.style.color = "red";
+                statusDiv.innerText = "연결 실패: " + (errorData.message || "토큰 또는 권한 오류");
+                nameDiv.innerText = "연결 오류 발생";
                 return;
             }
 
             const data = await response.json();
             data.items.forEach(item => {
-                const phone = String(item.values['c-g9tuw4nP2h']); // 출결번호 ID
-                const name = item.values['c-HIpVFeKd32'];          // 학생이름 ID
-                if(phone) studentData[phone] = name;
+                const phone = String(item.values['c-g9tuw4nP2h']); // 출결번호 컬럼
+                const name = item.values['c-HIpVFeKd32'];          // 학생이름 컬럼
+                if(phone && name) studentData[phone] = name;
             });
             
+            statusDiv.style.color = "green";
             statusDiv.innerText = "준비 완료! (학생 " + Object.keys(studentData).length + "명 연결됨)";
+            nameDiv.innerText = "반갑습니다!";
         } catch (e) {
-            statusDiv.innerText = "네트워크 오류: 인터넷 연결을 확인하세요.";
+            statusDiv.style.color = "red";
+            statusDiv.innerText = "에러 발생: " + e.message;
+            nameDiv.innerText = "네트워크 확인 필요";
         }
     }
 
@@ -100,15 +107,16 @@
                 })
             });
             if (response.ok) {
-                new SpeechSynthesisUtterance(name + " 학생, 확인되었습니다.").lang = 'ko-KR';
-                window.speechSynthesis.speak(new SpeechSynthesisUtterance(name + " 학생, 확인되었습니다."));
+                const speech = new SpeechSynthesisUtterance(name + " 학생, 확인되었습니다.");
+                speech.lang = 'ko-KR';
+                window.speechSynthesis.speak(speech);
                 document.getElementById('status').innerText = "출결 확인 완료!";
                 setTimeout(clearNum, 3000);
             } else {
-                document.getElementById('status').innerText = "전송 실패 (컬럼명 확인 필요)";
+                document.getElementById('status').innerText = "전송 실패 (Coda 설정을 확인하세요)";
             }
         } catch (e) {
-            document.getElementById('status').innerText = "오류 발생";
+            document.getElementById('status').innerText = "전송 중 오류 발생";
         }
     }
     window.onload = loadStudents;
