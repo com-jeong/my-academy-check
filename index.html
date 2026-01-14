@@ -11,14 +11,19 @@
         .title { color: #317EFB; font-size: 28px; font-weight: bold; margin-bottom: 30px; }
         .display { background: #f8f9fa; padding: 25px; font-size: 40px; border-radius: 15px; margin-bottom: 30px; letter-spacing: 15px; min-height: 55px; border: 1.5px solid #eee; color: #333; }
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        button { padding: 25px; font-size: 28px; border: 1px solid #f2f2f2; border-radius: 18px; background: white; cursor: pointer; transition: 0.1s; outline: none; -webkit-tap-highlight-color: transparent; }
+        button { padding: 25px; font-size: 28px; border: 1px solid #f2f2f2; border-radius: 18px; background: white; cursor: pointer; transition: 0.2s; outline: none; -webkit-tap-highlight-color: transparent; }
         button:active { background: #e9ecef; transform: scale(0.95); }
-        .btn-confirm { grid-column: span 3; background: #317EFB; color: white; border: none; margin-top: 25px; font-weight: bold; padding: 28px; border-radius: 18px; font-size: 28px; }
         
-        /* 중복 선택 모달 */
+        /* 동적 확인 버튼 스타일 */
+        .btn-confirm { 
+            grid-column: span 3; background: #317EFB; color: white; border: none; margin-top: 25px; 
+            font-weight: bold; padding: 28px; border-radius: 18px; font-size: 26px; transition: all 0.3s ease;
+        }
+        .btn-ready { background: #00C853; transform: scale(1.02); } /* 이름이 확인되었을 때 초록색으로 변경 */
+        
         #modal { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: white; border-radius: 30px; z-index: 20; flex-direction: column; justify-content: center; align-items: center; padding: 30px; box-sizing: border-box; }
         .modal-title { font-size: 22px; color: #333; margin-bottom: 25px; font-weight: bold; }
-        .name-btn { width: 100%; padding: 25px; margin: 10px 0; font-size: 28px; background: #f1f8ff; border: 2px solid #317EFB; color: #317EFB; border-radius: 15px; font-weight: bold; }
+        .name-btn { width: 100%; padding: 28px; margin: 12px 0; font-size: 30px; background: #f1f8ff; border: 2px solid #317EFB; color: #317EFB; border-radius: 18px; font-weight: bold; }
         #loading-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.95); border-radius: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #317EFB; z-index: 30; font-size: 18px; }
     </style>
 </head>
@@ -40,11 +45,10 @@
             <button onclick="press('7')">7</button><button onclick="press('8')">8</button><button onclick="press('9')">9</button>
             <button onclick="clearDisp()" style="color:#dc3545; font-weight:bold;">C</button><button onclick="press('0')">0</button>
         </div>
-        <button onclick="submitCheck()" class="btn-confirm">확인</button>
+        <button onclick="submitCheck()" class="btn-confirm" id="submit-btn">확인</button>
     </div>
 
     <script>
-        // 원장님이 주신 최신 웹앱 주소 반영
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzWXUBnR6C5tzuV9T4olv5PtgmtUnM-kAjkcwHdB0kUBb19N4wgmCaMTkQ_oonPsrvPbg/exec"; 
         let currentInput = "";
         let studentData = [];
@@ -55,32 +59,60 @@
                 const data = await response.json();
                 studentData = data.items || [];
                 document.getElementById("loading-overlay").style.display = "none";
-                console.log("명단 로딩 완료:", studentData.length, "명");
-            } catch (e) { 
-                document.getElementById("loading-overlay").innerText = "명단 로딩 오류"; 
-                console.error(e);
-            }
+            } catch (e) { document.getElementById("loading-overlay").innerText = "로딩 실패"; }
         };
 
-        function press(num) { if (currentInput.length < 4) { currentInput += num; updateDisplay(); } }
-        function clearDisp() { currentInput = ""; updateDisplay(); }
-        function updateDisplay() { document.getElementById("display").innerText = currentInput.padEnd(4, "_").split("").join(" "); }
+        function press(num) { 
+            if (currentInput.length < 4) { 
+                currentInput += num; 
+                updateDisplay(); 
+                if (currentInput.length === 4) checkStudentDirectly(); // 4자리 완성 시 즉시 체크
+            } 
+        }
+
+        function clearDisp() { 
+            currentInput = ""; 
+            updateDisplay(); 
+            resetSubmitButton();
+        }
+
+        function updateDisplay() { 
+            document.getElementById("display").innerText = currentInput.padEnd(4, "_").split("").join(" "); 
+        }
+
+        // 4자리가 눌렸을 때 버튼 텍스트를 이름으로 변경
+        function checkStudentDirectly() {
+            const matches = studentData.filter(s => Object.values(s.values).map(v => String(v).trim()).includes(currentInput));
+            const btn = document.getElementById("submit-btn");
+
+            if (matches.length === 1) {
+                const name = Object.values(matches[0].values).find(v => /[가-힣]/.test(v)) || "학생";
+                btn.innerText = name + " 등원하기";
+                btn.classList.add("btn-ready");
+            } else if (matches.length > 1) {
+                btn.innerText = "학생 선택하기";
+                btn.classList.add("btn-ready");
+            } else {
+                btn.innerText = "미등록 번호";
+            }
+        }
+
+        function resetSubmitButton() {
+            const btn = document.getElementById("submit-btn");
+            btn.innerText = "확인";
+            btn.classList.remove("btn-ready");
+        }
+
         function closeModal() { document.getElementById("modal").style.display = "none"; clearDisp(); }
 
         async function submitCheck() {
             if (currentInput.length < 4) return;
-            
-            // [강력 매칭] 행의 모든 값 중 입력한 4자리 번호가 있는지 검색
-            const matches = studentData.filter(s => {
-                const vals = Object.values(s.values).map(v => String(v).trim());
-                return vals.includes(currentInput);
-            });
+            const matches = studentData.filter(s => Object.values(s.values).map(v => String(v).trim()).includes(currentInput));
             
             if (matches.length === 0) {
-                alert("등록되지 않은 번호입니다. (" + currentInput + ")");
+                alert("등록되지 않은 번호입니다.");
                 clearDisp();
             } else if (matches.length === 1) {
-                // 한글 이름 자동 추출 (한글이 포함된 값을 이름으로 인식)
                 const name = Object.values(matches[0].values).find(v => /[가-힣]/.test(v)) || "학생";
                 processAttendance(name);
             } else {
@@ -104,10 +136,9 @@
 
         async function processAttendance(name) {
             try {
-                // Coda 로그 테이블에 이름 전송
                 await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ name: name }) });
                 alert(name + " 학생, 등원 확인되었습니다!");
-            } catch (e) { alert("전송 실패: 인터넷 연결을 확인하세요."); }
+            } catch (e) { alert("연결 오류"); }
             clearDisp();
         }
     </script>
