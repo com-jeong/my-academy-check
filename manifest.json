@@ -1,0 +1,15 @@
+{
+  "short_name": "픽영어출결",
+  "name": "픽영어학원 출결 시스템",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3476/3476303.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#317EFB"
+}
