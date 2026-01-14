@@ -7,19 +7,19 @@
     <link rel="manifest" href="manifest.json">
     <style>
         body { font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
-        .keypad-container { background: white; padding: 35px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; width: 340px; position: relative; }
-        .title { color: #317EFB; font-size: 26px; font-weight: bold; margin-bottom: 25px; }
-        .display { background: #f8f9fa; padding: 20px; font-size: 36px; border-radius: 12px; margin-bottom: 25px; letter-spacing: 12px; min-height: 50px; border: 1px solid #eee; }
+        .keypad-container { background: white; padding: 40px; border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); text-align: center; width: 360px; position: relative; }
+        .title { color: #317EFB; font-size: 28px; font-weight: bold; margin-bottom: 30px; }
+        .display { background: #f8f9fa; padding: 25px; font-size: 40px; border-radius: 15px; margin-bottom: 30px; letter-spacing: 15px; min-height: 55px; border: 1.5px solid #eee; color: #333; }
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        button { padding: 22px; font-size: 26px; border: 1px solid #f0f0f0; border-radius: 15px; background: white; cursor: pointer; transition: 0.1s; }
+        button { padding: 25px; font-size: 28px; border: 1px solid #f2f2f2; border-radius: 18px; background: white; cursor: pointer; transition: 0.1s; outline: none; -webkit-tap-highlight-color: transparent; }
         button:active { background: #e9ecef; transform: scale(0.95); }
-        .btn-confirm { grid-column: span 3; background: #317EFB; color: white; border: none; margin-top: 20px; font-weight: bold; padding: 25px; border-radius: 15px; font-size: 26px; }
+        .btn-confirm { grid-column: span 3; background: #317EFB; color: white; border: none; margin-top: 25px; font-weight: bold; padding: 28px; border-radius: 18px; font-size: 28px; }
         
-        /* 모달 스타일 */
-        #modal { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: white; border-radius: 25px; z-index: 20; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
-        .modal-title { font-size: 20px; color: #333; margin-bottom: 20px; font-weight: bold; }
+        /* 중복 선택 모달 */
+        #modal { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: white; border-radius: 30px; z-index: 20; flex-direction: column; justify-content: center; align-items: center; padding: 30px; box-sizing: border-box; }
+        .modal-title { font-size: 22px; color: #333; margin-bottom: 25px; font-weight: bold; }
         .name-btn { width: 100%; padding: 25px; margin: 10px 0; font-size: 28px; background: #f1f8ff; border: 2px solid #317EFB; color: #317EFB; border-radius: 15px; font-weight: bold; }
-        #loading-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.9); border-radius: 25px; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #317EFB; z-index: 30; }
+        #loading-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.95); border-radius: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #317EFB; z-index: 30; font-size: 18px; }
     </style>
 </head>
 <body>
@@ -27,9 +27,9 @@
         <div id="loading-overlay">학생 명단을 불러오는 중...</div>
         
         <div id="modal">
-            <div class="modal-title">이름을 선택하세요</div>
+            <div class="modal-title">본인의 이름을 선택하세요</div>
             <div id="name-list" style="width: 100%;"></div>
-            <button onclick="closeModal()" style="margin-top:20px; font-size:16px; border:none; color:#666; background:none;">취소하기</button>
+            <button onclick="closeModal()" style="margin-top:20px; border:none; color:#999; background:none;">취소</button>
         </div>
 
         <div class="title">반갑습니다!</div>
@@ -38,12 +38,13 @@
             <button onclick="press('1')">1</button><button onclick="press('2')">2</button><button onclick="press('3')">3</button>
             <button onclick="press('4')">4</button><button onclick="press('5')">5</button><button onclick="press('6')">6</button>
             <button onclick="press('7')">7</button><button onclick="press('8')">8</button><button onclick="press('9')">9</button>
-            <button onclick="clearDisp()" style="color:#dc3545">C</button><button onclick="press('0')">0</button>
+            <button onclick="clearDisp()" style="color:#dc3545; font-weight:bold;">C</button><button onclick="press('0')">0</button>
         </div>
         <button onclick="submitCheck()" class="btn-confirm">확인</button>
     </div>
 
     <script>
+        // 원장님이 주신 최신 웹앱 주소 반영
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzWXUBnR6C5tzuV9T4olv5PtgmtUnM-kAjkcwHdB0kUBb19N4wgmCaMTkQ_oonPsrvPbg/exec"; 
         let currentInput = "";
         let studentData = [];
@@ -52,9 +53,13 @@
             try {
                 const response = await fetch(GAS_URL);
                 const data = await response.json();
-                studentData = data.items;
+                studentData = data.items || [];
                 document.getElementById("loading-overlay").style.display = "none";
-            } catch (e) { document.getElementById("loading-overlay").innerText = "오류 발생"; }
+                console.log("명단 로딩 완료:", studentData.length, "명");
+            } catch (e) { 
+                document.getElementById("loading-overlay").innerText = "명단 로딩 오류"; 
+                console.error(e);
+            }
         };
 
         function press(num) { if (currentInput.length < 4) { currentInput += num; updateDisplay(); } }
@@ -64,13 +69,20 @@
 
         async function submitCheck() {
             if (currentInput.length < 4) return;
-            const matches = studentData.filter(s => s.values["c-g9tuw4nP2h"] === currentInput);
+            
+            // [강력 매칭] 행의 모든 값 중 입력한 4자리 번호가 있는지 검색
+            const matches = studentData.filter(s => {
+                const vals = Object.values(s.values).map(v => String(v).trim());
+                return vals.includes(currentInput);
+            });
             
             if (matches.length === 0) {
-                alert("등록되지 않은 번호입니다.");
+                alert("등록되지 않은 번호입니다. (" + currentInput + ")");
                 clearDisp();
             } else if (matches.length === 1) {
-                processAttendance(matches[0].values["c-HIpVFeKd32"]);
+                // 한글 이름 자동 추출 (한글이 포함된 값을 이름으로 인식)
+                const name = Object.values(matches[0].values).find(v => /[가-힣]/.test(v)) || "학생";
+                processAttendance(name);
             } else {
                 showModal(matches);
             }
@@ -80,7 +92,7 @@
             const listDiv = document.getElementById("name-list");
             listDiv.innerHTML = "";
             matches.forEach(m => {
-                const name = m.values["c-HIpVFeKd32"];
+                const name = Object.values(m.values).find(v => /[가-힣]/.test(v)) || "학생";
                 const btn = document.createElement("button");
                 btn.className = "name-btn";
                 btn.innerText = name;
@@ -92,9 +104,10 @@
 
         async function processAttendance(name) {
             try {
+                // Coda 로그 테이블에 이름 전송
                 await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ name: name }) });
-                alert(name + " 학생, 등원 확인!"); //
-            } catch (e) { alert("연결 오류"); }
+                alert(name + " 학생, 등원 확인되었습니다!");
+            } catch (e) { alert("전송 실패: 인터넷 연결을 확인하세요."); }
             clearDisp();
         }
     </script>
