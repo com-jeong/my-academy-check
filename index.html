@@ -6,7 +6,7 @@
     <title>픽영어 프리미엄 출결</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        /* 프리미엄 디자인 유지 */
+        /* 프리미엄 디자인 */
         body { 
             margin: 0; padding: 0; height: 100vh; overflow: hidden;
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
@@ -33,6 +33,7 @@
         }
         .num-btn:active { background: #f1f5f9; transform: translateY(2px); box-shadow: none; }
         .btn-clear { color: #ef4444; background: #fff1f2; }
+
         #selection-area { display: none; flex-direction: column; flex-grow: 1; justify-content: center; }
         .name-btn { 
             width: 100%; padding: 35px; margin: 12px 0; font-size: 34px; 
@@ -41,11 +42,16 @@
             animation: slideUp 0.4s ease-out;
         }
         .cancel-link { margin-top: 25px; color: #94a3b8; font-size: 18px; cursor: pointer; border: none; background: none; text-decoration: underline; }
+
         #result-area, #error-area { display: none; flex-direction: column; flex-grow: 1; justify-content: center; align-items: center; animation: zoomIn 0.5s ease; }
         .icon-circle { width: 100px; height: 100px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 50px; margin-bottom: 25px; }
         .success-bg { background: #dcfce7; color: #22c55e; }
         .error-bg { background: #fee2e2; color: #ef4444; }
         .msg-main { font-size: 32px; font-weight: 800; color: #1e293b; line-height: 1.3; }
+        
+        /* 에러 번호 강조 스타일 */
+        .error-num-display { font-size: 28px; color: #ef4444; font-weight: 700; margin-top: 10px; background: #fff1f2; padding: 5px 20px; border-radius: 10px; }
+
         #loading-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.95); border-radius: 40px; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #3b82f6; z-index: 30; font-size: 20px; }
         @keyframes slideUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
         @keyframes zoomIn { from { opacity:0; transform: scale(0.9); } to { opacity:1; transform: scale(1); } }
@@ -76,6 +82,7 @@
         <div id="error-area">
             <div class="icon-circle error-bg">✖</div>
             <div class="msg-main">정보를<br>찾을 수 없어요</div>
+            <div id="error-number-box" class="error-num-display"></div>
             <p style="color:#94a3b8; margin-top:15px;">번호를 다시 확인해 주세요.</p>
         </div>
     </div>
@@ -85,15 +92,9 @@
         let currentInput = "";
         let studentData = [];
 
-        // 다양하고 다정한 응원 멘트 리스트
         const greetings = [
-            "오늘도 실력이 쑥쑥 자랄 거예요!",
-            "영어가 즐거워지는 시간이에요!",
-            "선생님이 기다리고 있었어요. 반가워요!",
-            "오늘도 힘차게 공부해봐요!",
-            "픽영어에 온 걸 환영해요!",
-            "오늘따라 더 멋져 보이네요!",
-            "자신감 있게, 오늘도 화이팅!"
+            "오늘도 실력이 쑥쑥 자랄 거예요!", "영어가 즐거워지는 시간이에요!", "선생님이 기다리고 있었어요. 반가워요!",
+            "오늘도 힘차게 공부해봐요!", "픽영어에 온 걸 환영해요!", "오늘따라 더 멋져 보이네요!", "자신감 있게, 오늘도 화이팅!"
         ];
 
         async function loadData() {
@@ -128,7 +129,7 @@
 
         function handleFullInput() {
             const matches = studentData.filter(s => Object.values(s.values).map(v => String(v).trim()).includes(currentInput));
-            if (matches.length === 0) { showError(); return; }
+            if (matches.length === 0) { showError(currentInput); return; } // 입력한 번호를 showError에 전달
             document.getElementById("keypad-area").style.display = "none";
             const nameDiv = document.getElementById("name-buttons");
             nameDiv.innerHTML = "";
@@ -143,27 +144,26 @@
             document.getElementById("selection-area").style.display = "flex";
         }
 
-        function showError() {
+        // 미등록 번호 화면 및 번호 표시 기능
+        function showError(num) {
             document.getElementById("main-header").style.display = "none";
             document.getElementById("keypad-area").style.display = "none";
             document.getElementById("error-area").style.display = "flex";
-            speak("등록되지 않은 번호입니다.");
-            setTimeout(clearDisp, 2500);
+            document.getElementById("error-number-box").innerText = "입력한 번호: " + num;
+            
+            speak("등록되지 않은 번호 " + num.split("").join(" ") + "입니다. 번호를 확인해 주세요."); // 음성으로도 번호 안내
+            setTimeout(clearDisp, 3000);
         }
 
-        // 결과 화면 및 음성 랜덤 출력 로직
         async function confirmAttendance(name) {
             const num = currentInput;
-            const randomMsg = greetings[Math.floor(Math.random() * greetings.length)]; // 랜덤 멘트 선택
-            
+            const randomMsg = greetings[Math.floor(Math.random() * greetings.length)];
             document.getElementById("main-header").style.display = "none";
             document.getElementById("selection-area").style.display = "none";
             document.getElementById("result-area").style.display = "flex";
             document.getElementById("result-message").innerHTML = name + "님,<br>출결 완료!";
             document.getElementById("result-sub").innerText = randomMsg;
-            
-            speak(name + " 학생, " + randomMsg); // 음성으로도 랜덤 멘트 출력
-            
+            speak(name + " 학생, " + randomMsg);
             try {
                 await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ name: name, number: num }) });
             } catch (e) { console.error(e); }
