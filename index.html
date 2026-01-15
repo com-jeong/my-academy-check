@@ -3,32 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>픽영어학원 출결 시스템</title>
+    <title>픽영어학원 출결</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        /* 기본 스타일 설정 */
         body { font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f2f5; overflow: hidden; }
         .container { background: white; padding: 40px; border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); text-align: center; width: 360px; min-height: 580px; position: relative; display: flex; flex-direction: column; }
         .title { color: #317EFB; font-size: 28px; font-weight: bold; margin-bottom: 30px; }
         .display { background: #f8f9fa; padding: 25px; font-size: 40px; border-radius: 15px; margin-bottom: 30px; letter-spacing: 15px; min-height: 55px; border: 1.5px solid #eee; color: #333; }
         
-        /* 숫자 키패드 영역 */
+        /* 키패드 및 선택 영역 */
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        .num-btn { padding: 25px; font-size: 28px; border: 1px solid #f2f2f2; border-radius: 18px; background: white; cursor: pointer; transition: 0.1s; outline: none; -webkit-tap-highlight-color: transparent; }
+        .num-btn { padding: 25px; font-size: 28px; border: 1px solid #f2f2f2; border-radius: 18px; background: white; cursor: pointer; transition: 0.1s; outline: none; }
         .num-btn:active { background: #e9ecef; transform: scale(0.95); }
-        
-        /* 이름 선택 영역 (4자리 입력 시 등장) */
         #selection-area { display: none; flex-direction: column; flex-grow: 1; justify-content: center; }
-        .name-btn { width: 100%; padding: 30px; margin: 10px 0; font-size: 32px; background: #317EFB; border: none; color: white; border-radius: 20px; font-weight: bold; cursor: pointer; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .name-btn { width: 100%; padding: 30px; margin: 10px 0; font-size: 32px; background: #317EFB; border: none; color: white; border-radius: 20px; font-weight: bold; cursor: pointer; animation: popIn 0.3s; }
         .cancel-btn { margin-top: 20px; padding: 15px; font-size: 18px; color: #999; border: none; background: none; cursor: pointer; text-decoration: underline; }
         
-        /* 결과 화면 영역 (팝업 대체) */
-        #result-area { display: none; flex-direction: column; flex-grow: 1; justify-content: center; align-items: center; animation: fadeIn 0.5s ease; }
-        .success-icon { font-size: 80px; color: #00C853; margin-bottom: 20px; }
-        .success-msg { font-size: 32px; font-weight: bold; color: #333; line-height: 1.4; }
-        .success-sub { font-size: 18px; color: #666; margin-top: 15px; }
+        /* 결과 및 오류 화면 */
+        #result-area, #error-area { display: none; flex-direction: column; flex-grow: 1; justify-content: center; align-items: center; animation: fadeIn 0.5s; }
+        .icon { font-size: 80px; margin-bottom: 20px; }
+        .success-icon { color: #00C853; }
+        .error-icon { color: #FF5252; }
+        .msg-main { font-size: 30px; font-weight: bold; color: #333; line-height: 1.4; }
+        .msg-sub { font-size: 18px; color: #666; margin-top: 15px; }
 
-        /* 로딩 화면 */
         #loading-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.95); border-radius: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #317EFB; z-index: 30; font-size: 18px; }
 
         @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
@@ -45,50 +43,52 @@
         </div>
 
         <div id="keypad-area" class="grid">
-            <button class="num-btn" onclick="press('1')">1</button>
-            <button class="num-btn" onclick="press('2')">2</button>
-            <button class="num-btn" onclick="press('3')">3</button>
-            <button class="num-btn" onclick="press('4')">4</button>
-            <button class="num-btn" onclick="press('5')">5</button>
-            <button class="num-btn" onclick="press('6')">6</button>
-            <button class="num-btn" onclick="press('7')">7</button>
-            <button class="num-btn" onclick="press('8')">8</button>
-            <button class="num-btn" onclick="press('9')">9</button>
-            <button class="num-btn" onclick="clearDisp()" style="color:#dc3545; font-weight:bold;">C</button>
-            <button class="num-btn" onclick="press('0')">0</button>
+            <button class="num-btn" onclick="press('1')">1</button><button class="num-btn" onclick="press('2')">2</button><button class="num-btn" onclick="press('3')">3</button>
+            <button class="num-btn" onclick="press('4')">4</button><button class="num-btn" onclick="press('5')">5</button><button class="num-btn" onclick="press('6')">6</button>
+            <button class="num-btn" onclick="press('7')">7</button><button class="num-btn" onclick="press('8')">8</button><button class="num-btn" onclick="press('9')">9</button>
+            <button class="num-btn" onclick="clearDisp()" style="color:#dc3545; font-weight:bold;">C</button><button class="num-btn" onclick="press('0')">0</button>
         </div>
 
         <div id="selection-area">
             <div id="name-buttons"></div>
-            <button class="cancel-btn" onclick="clearDisp()">번호 다시 입력하기 (취소)</button>
+            <button class="cancel-btn" onclick="clearDisp()">번호 다시 입력하기</button>
         </div>
 
         <div id="result-area">
-            <div class="success-icon">✔</div>
-            <div id="result-message" class="success-msg"></div>
-            <div class="success-sub">잠시 후 초기 화면으로 돌아갑니다.</div>
+            <div class="icon success-icon">✔</div>
+            <div id="result-message" class="msg-main"></div>
+            <div class="msg-sub">잠시 후 초기 화면으로 이동합니다.</div>
+        </div>
+
+        <div id="error-area">
+            <div class="icon error-icon">✖</div>
+            <div class="msg-main">등록되지 않은<br>번호입니다</div>
+            <div class="msg-sub">번호를 다시 확인해 주세요.</div>
         </div>
     </div>
 
     <script>
-        // 원장님의 구글 앱 스크립트 웹앱 주소
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzrqocRe1LX-uOooU2Z69tRkeAInNrpmdec_uKN9gOKkZCUqQVM-waf1wJaMFRTzhDIEA/exec"; 
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzWXUBnR6C5tzuV9T4olv5PtgmtUnM-kAjkcwHdB0kUBb19N4wgmCaMTkQ_oonPsrvPbg/exec"; 
         let currentInput = "";
         let studentData = [];
 
-        // 페이지 로드 시 학생 명단 가져오기
-        window.onload = async () => {
+        // 명단 로딩 함수 (별도 분리)
+        async function loadStudentData() {
             try {
-                const response = await fetch(GAS_URL);
+                const response = await fetch(GAS_URL + "?t=" + new Date().getTime()); // 캐시 방지 파라미터 추가
                 const data = await response.json();
                 studentData = data.items || [];
                 document.getElementById("loading-overlay").style.display = "none";
-            } catch (e) { 
-                document.getElementById("loading-overlay").innerText = "명단 로딩 실패. 새로고침 해주세요."; 
-            }
+                console.log("명단 동기화 완료:", new Date().toLocaleTimeString());
+            } catch (e) { console.error("로딩 실패", e); }
+        }
+
+        // 1. 페이지 로드 시 실행 및 5분마다 자동 동기화 설정
+        window.onload = () => {
+            loadStudentData();
+            setInterval(loadStudentData, 300000); // 300,000ms = 5분
         };
 
-        // 번호 입력 처리
         function press(num) {
             if (currentInput.length < 4) {
                 currentInput += num;
@@ -97,7 +97,6 @@
             }
         }
 
-        // 입력 초기화 및 화면 복구
         function clearDisp() {
             currentInput = "";
             updateDisplay();
@@ -105,36 +104,26 @@
             document.getElementById("keypad-area").style.display = "grid";
             document.getElementById("selection-area").style.display = "none";
             document.getElementById("result-area").style.display = "none";
+            document.getElementById("error-area").style.display = "none";
         }
 
-        // 번호 표시 업데이트
         function updateDisplay() {
             document.getElementById("display").innerText = currentInput.padEnd(4, "_").split("").join(" ");
         }
 
-        // 4자리 완성 시 자동 이름 조회 및 UI 전환
         function handleFullInput() {
-            // 학생 데이터의 모든 값 중에서 입력된 번호와 일치하는 학생 찾기
-            const matches = studentData.filter(s => {
-                const vals = Object.values(s.values).map(v => String(v).trim());
-                return vals.includes(currentInput);
-            });
-
+            const matches = studentData.filter(s => Object.values(s.values).map(v => String(v).trim()).includes(currentInput));
+            
             if (matches.length === 0) {
-                speak("등록되지 않은 번호입니다.");
-                alert("등록되지 않은 번호입니다.");
-                clearDisp();
+                showErrorScreen(); // 팝업 대신 오류 화면 표시
                 return;
             }
 
-            // 키패드 숨기고 이름 버튼 보이기
             document.getElementById("keypad-area").style.display = "none";
             const selectionArea = document.getElementById("selection-area");
             const nameButtonsDiv = document.getElementById("name-buttons");
             nameButtonsDiv.innerHTML = "";
-
             matches.forEach(m => {
-                // 한글이 포함된 값을 학생 이름으로 추출
                 const name = Object.values(m.values).find(v => /[가-힣]/.test(v)) || "학생";
                 const btn = document.createElement("button");
                 btn.className = "name-btn";
@@ -142,38 +131,28 @@
                 btn.onclick = () => processAttendance(name);
                 nameButtonsDiv.appendChild(btn);
             });
-
             selectionArea.style.display = "flex";
         }
 
-        // 최종 출결 처리 및 화면 전환
-        async function processAttendance(name) {
-            const numberToSend = currentInput; // 입력된 4자리 번호
-            
-            // 1. 결과 화면으로 즉시 전환
-            showResultScreen(name);
-            
-            // 2. 음성 안내 (TTS)
-            speak(name + " 학생, 등원 확인되었습니다.");
-            
-            try {
-                // 3. 구글 서버(GAS)를 통해 Coda로 이름과 번호 전송
-                await fetch(GAS_URL, { 
-                    method: "POST", 
-                    body: JSON.stringify({ 
-                        name: name, 
-                        number: numberToSend 
-                    }) 
-                });
-            } catch (e) { 
-                console.error("전송 오류", e); 
-            }
+        // 오류 화면 표시 함수 (팝업 대체)
+        function showErrorScreen() {
+            document.getElementById("main-header").style.display = "none";
+            document.getElementById("keypad-area").style.display = "none";
+            document.getElementById("error-area").style.display = "flex";
+            speak("등록되지 않은 번호입니다. 번호를 다시 확인해 주세요.");
+            setTimeout(clearDisp, 3000);
+        }
 
-            // 4. 3.5초 후 자동으로 초기 키패드 화면으로 복귀
+        async function processAttendance(name) {
+            const numberToSend = currentInput;
+            showResultScreen(name);
+            speak(name + " 학생, 등원 확인되었습니다.");
+            try {
+                await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ name: name, number: numberToSend }) });
+            } catch (e) { console.error("전송 오류", e); }
             setTimeout(clearDisp, 3500);
         }
 
-        // 결과 화면 표시 함수
         function showResultScreen(name) {
             document.getElementById("main-header").style.display = "none";
             document.getElementById("selection-area").style.display = "none";
@@ -181,13 +160,11 @@
             document.getElementById("result-message").innerHTML = name + " 학생<br>등원 확인되었습니다";
         }
 
-        // 음성 안내(TTS) 함수
         function speak(text) {
             if (typeof SpeechSynthesisUtterance === "undefined") return;
-            window.speechSynthesis.cancel(); // 현재 재생 중인 음성 중단
+            window.speechSynthesis.cancel();
             const msg = new SpeechSynthesisUtterance(text);
             msg.lang = "ko-KR";
-            msg.rate = 1.0;
             window.speechSynthesis.speak(msg);
         }
     </script>
