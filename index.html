@@ -47,7 +47,6 @@
         .error-bg { background: #fee2e2; color: #ef4444; }
         .msg-main { font-size: 32px; font-weight: 800; color: #1e293b; line-height: 1.3; }
         
-        /* 🔴 에러 번호 표시 박스 */
         #error-number-box { 
             font-size: 45px; color: #ef4444; font-weight: 900; 
             margin: 20px 0; padding: 15px 35px; background: #fff1f2; 
@@ -94,19 +93,33 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwQUFXA0GDi4J0rvGCcwa4J8cEKOMsNeMfHFbCQl9vlCrslo6ymx9HfVJKjuNrR7QR3wA/exec"; 
+        // [설정] 웹앱 주소
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyd8IddUuE4ihF-pq74uDydQOW4xNibDwkmGX2Qy473AWsiQSY99x7O0Zx8a3K0EYMjqg/exec"; 
+        
+        // [보안] 주소창(?key=암호)에서 암호를 가져옵니다. 코드에는 암호가 적히지 않습니다.
+        const urlParams = new URLSearchParams(window.location.search);
+        const MY_KEY = urlParams.get('key'); 
+
         let currentInput = "";
         let studentData = [];
-
         const greetings = ["오늘도 실력이 쑥쑥!", "영어가 즐거워지는 시간!", "기다리고 있었어요!", "오늘도 화이팅!", "반가워요!"];
 
+        // 명단 데이터 로드 (암호를 쿼리에 포함)
         async function loadData() {
+            if (!MY_KEY) {
+                document.getElementById("loading-overlay").innerText = "⚠️ 접근 권한이 없습니다 (Key 누락)";
+                return;
+            }
             try {
-                const response = await fetch(GAS_URL + "?t=" + new Date().getTime());
+                const response = await fetch(`${GAS_URL}?key=${MY_KEY}&t=${new Date().getTime()}`);
                 const data = await response.json();
+                if (data.error) throw new Error(data.error);
                 studentData = data.items || [];
                 document.getElementById("loading-overlay").style.display = "none";
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error(e);
+                document.getElementById("loading-overlay").innerText = "⚠️ 동기화 실패 (암호를 확인하세요)";
+            }
         }
 
         window.onload = () => { loadData(); setInterval(loadData, 300000); };
@@ -147,18 +160,16 @@
             document.getElementById("selection-area").style.display = "flex";
         }
 
-        // 🔴 음성 안내에서 번호 낭독을 제거
         function showError(num) {
             document.getElementById("main-header").style.display = "none";
             document.getElementById("keypad-area").style.display = "none";
             document.getElementById("error-area").style.display = "flex";
             document.getElementById("error-number-box").innerText = num;
-            
-            // 번호를 읽지 않고 안내 멘트만 출력
             speak("등록되지 않은 번호입니다. 번호를 확인해 주세요.");
             setTimeout(clearDisp, 3500);
         }
 
+        // 출결 기록 전송 (주소에 암호 포함)
         async function confirmAttendance(name) {
             const num = currentInput;
             const randomMsg = greetings[Math.floor(Math.random() * greetings.length)];
@@ -168,9 +179,15 @@
             document.getElementById("result-message").innerHTML = name + "님,<br>출결 완료!";
             document.getElementById("result-sub").innerText = randomMsg;
             speak(name + " 학생, " + randomMsg);
+            
             try {
-                await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ name: name, number: num }) });
+                // POST 요청 시에도 주소 끝에 ?key=암호 를 붙여 전송
+                await fetch(`${GAS_URL}?key=${MY_KEY}`, { 
+                    method: "POST", 
+                    body: JSON.stringify({ name: name, number: num }) 
+                });
             } catch (e) { console.error(e); }
+            
             setTimeout(clearDisp, 3500);
         }
 
